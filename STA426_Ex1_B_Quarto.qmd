@@ -1,0 +1,55 @@
+---
+title: Exercise part B
+description: |
+  lorem ipsum dolor sit amet i do some sampling
+---
+
+Test paragraph
+
+Hello this is my entry for exercise 1 part B i hope you enjoy
+
+### Steppy steps
+
+0. Set a seed so that the data is reproducible later.
+```{r}
+set.seed(1337)
+```
+
+1. Create a vector that contains 100 randomly sampled values from a negative binomial distribution.
+```{r}
+neg_bin_dist_samples <- rnbinom(n = 100, mu = 10, size = 2)
+head(neg_bin_dist_samples)
+```
+2. Create a vector that contains log10-transformed values from the vector in step 1.
+```{r}
+neg_bin_dist_samples_log10 <- log(neg_bin_dist_samples+1)
+head(neg_bin_dist_samples_log10)
+```
+3. Plot histograms of raw and log10-transformed data side by side 
+```{r}
+par(mfrow = c(1,2))
+
+hist(neg_bin_dist_samples,
+     main='Raw data')
+hist(neg_bin_dist_samples_log10,
+     main='Log10-transform data')
+```
+4. Display the mean and the variance of the obtained data.
+
+* Raw data:
+```{r}
+summary(neg_bin_dist_samples)["Mean"]
+var(neg_bin_dist_samples)
+```
+<span style="color: red;">
+*Therefore we obtain a mean of 10.23 and a variance of 62.96677 for our randomly sampled data.*
+</span>
+
+* Log10-transformed data:
+```{r}
+summary(neg_bin_dist_samples_log10)["Mean"]
+var(neg_bin_dist_samples_log10)
+```
+<span style="color: red;">
+*Therefore we obtain a mean of 2.16019 and a variance of 0.5866858 for our randomly sampled data.*
+</span>
