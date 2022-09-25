@@ -14,3 +14,6 @@ Did you know that
   * E
 
 [^1]: [his twitter lol](https://twitter.com/illuminahd)
+
+### This line was written using RStudio  
+git config --global user.email "ejansone@student.ethz.ch"
