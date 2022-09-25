@@ -15,5 +15,4 @@ Did you know that
 
 [^1]: [his twitter lol](https://twitter.com/illuminahd)
 
-### This line was written using RStudio  
-git config --global user.email "ejansone@student.ethz.ch"
+### This line was written using RStudio
