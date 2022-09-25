@@ -51,5 +51,5 @@ summary(neg_bin_dist_samples_log10)["Mean"]
 var(neg_bin_dist_samples_log10)
 ```
 <span style="color: red;">
-*Therefore we obtain a mean of 2.16019 and a variance of 0.5866858 for our randomly sampled data.*
+*Therefore we obtain a mean of 2.16019 and a variance of 0.5866858 for our log10-transformed data.*
 </span>
