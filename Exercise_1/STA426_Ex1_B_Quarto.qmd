@@ -38,18 +38,18 @@ hist(neg_bin_dist_samples_log10,
 
 * Raw data:
 ```{r}
-summary(neg_bin_dist_samples)["Mean"]
-var(neg_bin_dist_samples)
+mean_raw <- summary(neg_bin_dist_samples)["Mean"]
+var_raw <- var(neg_bin_dist_samples)
 ```
 <span style="color: red;">
-*Therefore we obtain a mean of 10.23 and a variance of 62.96677 for our randomly sampled data.*
+*Therefore we obtain a mean of `r mean_raw` and a variance of `r var_raw` for our randomly sampled data.*
 </span>
 
 * Log10-transformed data:
 ```{r}
-summary(neg_bin_dist_samples_log10)["Mean"]
-var(neg_bin_dist_samples_log10)
+mean_log10 <- summary(neg_bin_dist_samples_log10)["Mean"]
+var_log10 <- var(neg_bin_dist_samples_log10)
 ```
 <span style="color: red;">
-*Therefore we obtain a mean of 2.16019 and a variance of 0.5866858 for our log10-transformed data.*
+*Therefore we obtain a mean of `r mean_log10` and a variance of `r var_log10` for our log10-transformed data.*
 </span>

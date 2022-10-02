@@ -174,32 +174,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <li>Raw data:</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(neg_bin_dist_samples)[<span class="st">"Mean"</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code> Mean 
-10.23 </code></pre>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mean_raw <span class="ot">&lt;-</span> <span class="fu">summary</span>(neg_bin_dist_samples)[<span class="st">"Mean"</span>]</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>var_raw <span class="ot">&lt;-</span> <span class="fu">var</span>(neg_bin_dist_samples)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">var</span>(neg_bin_dist_samples)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 62.96677</code></pre>
-</div>
-</div>
-<p><span style="color: red;"> <em>Therefore we obtain a mean of 10.23 and a variance of 62.96677 for our randomly sampled data.</em> </span></p>
+<p><span style="color: red;"> <em>Therefore we obtain a mean of 10.23 and a variance of 62.9667677 for our randomly sampled data.</em> </span></p>
 <ul>
 <li>Log10-transformed data:</li>
 </ul>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(neg_bin_dist_samples_log10)[<span class="st">"Mean"</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   Mean 
-2.16019 </code></pre>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>mean_log10 <span class="ot">&lt;-</span> <span class="fu">summary</span>(neg_bin_dist_samples_log10)[<span class="st">"Mean"</span>]</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>var_log10 <span class="ot">&lt;-</span> <span class="fu">var</span>(neg_bin_dist_samples_log10)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">var</span>(neg_bin_dist_samples_log10)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 0.5866858</code></pre>
-</div>
-</div>
-<p><span style="color: red;"> <em>Therefore we obtain a mean of 2.16019 and a variance of 0.5866858 for our log10-transformed data.</em> </span></p>
+<p><span style="color: red;"> <em>Therefore we obtain a mean of 2.1601898 and a variance of 0.5866858 for our log10-transformed data.</em> </span></p>
 </section>
 
 </main>
