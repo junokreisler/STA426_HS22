@@ -1,0 +1,161 @@
+---
+title: "Exercise 03"
+author: "Hubert Rehrauer"
+date: "03 10 2022"
+format: html
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exploratory Data Analysis
+
+Do an exploratory data analysis of a matrix of expression values. The data consists of expression values for samples that were treated with DMSO and TSA. The samples were measured using three technologies: bulk, IFC96, IFC800. See the two RDS files `counts.RDS` and `phenodata.RDS`.
+
+The experiment has two experimental factors "Treatment" and "Technology". Treatment has two levels, Technology has three levels. Samples that have the same combination of Treatment & Technology are replicates.
+
+## Data Import
+
+```{r }
+x = readRDS("counts.RDS")
+anno = readRDS("phenodata.RDS")
+head(anno)
+```
+
+## Compute and visualize basic statistics on the experimental design
+
+How many replicates are there for each combination of factor levels? 
+
+```{r}
+library('dplyr') # because i want it that way
+
+anno_replicates <- anno %>% group_by(Treatment, Technology) %>% summarise(rep_n = n())
+anno_replicates
+```
+
+How many genes have an expression value above 0 in each sample? 
+
+```{r}
+total_samples <- length(colnames(x))
+no_genes_in_sample <- x
+no_genes_in_sample[x != 0] <- 1
+
+gene_sums <- c(1:total_samples)
+
+for (i in c(1:total_samples)) {
+  gene_sums[i] <- sum(no_genes_in_sample[,i])
+}
+names(gene_sums) <- colnames(x)
+head(gene_sums)
+```
+
+Are there systematic differences between the samples in the different conditions (treatment & technology). Visualize the following statistics per sample:
+
+number of detected genes
+
+```{r}
+yticks <- seq(0,20000, by = 1250)
+barplot(gene_sums, names.arg = c(1:length(gene_sums)), main = 'Number of genes detected per sample\nX axis = sample no. ', 
+        ylim = c(0,16500))
+axis(side = 2, at = yticks, labels = FALSE)
+```
+
+total sum of counts per sample (serves as a proxy for the number of sequenced reads per sample)
+
+```{r}
+count_sums <- c(1:total_samples)
+
+for (i in c(1:total_samples)) {
+  count_sums[i] <- sum(x[,i])
+}
+names(count_sums) <- colnames(x)
+head(count_sums)
+
+yticks <- seq(0,max(count_sums), by = 1000000)
+barplot(count_sums, names.arg = c(1:length(gene_sums)), main = 'Read counts per sample\nX axis = sample no. ', 
+        ylim = c(0,max(count_sums)))
+axis(side = 2, at = yticks, labels = FALSE)
+```
+
+Color the samples by the experimental condition.
+
+```{r}
+rownames(anno) == colnames(x) # just making sure before pasting...
+
+library(ggplot2) # the only way
+count_dataset <- data.frame('Sample.counts' = count_sums, 'Technology' = anno$Technology, 'Treatment' = anno$Treatment,
+                            'Condition' = paste(anno$Treatment, anno$Technology))
+
+ggplot(count_dataset, aes(x = c(1:length(rownames(count_dataset))), y = Sample.counts, fill=Condition)) + 
+    geom_bar(position="dodge", stat="identity")
+
+# I made sure that the bar locations on the base plots correspond to bar locations on the ggplot.
+```
+
+## Normalize the data
+
+
+Scale the columns so that the total sum of all columns are identical
+
+```{r}
+# divide the columns by their sum
+scaled_reads <- x
+
+for (i in c(1:total_samples)) {
+  scaled_reads[,i] <- x[,i] / count_sums[i]
+}
+
+scaled_dataset <- count_dataset
+scaled_sums <- c(1:total_samples)
+
+for (i in c(1:total_samples)) {
+  scaled_sums[i] <- sum(scaled_reads[,i]) # should be 1 everywhere
+}
+
+scaled_dataset$Sample.counts <- scaled_sums
+
+ggplot(scaled_dataset, aes(x = c(1:total_samples), y = Sample.counts, fill=Condition)) + 
+    geom_bar(position="dodge", stat="identity")
+```
+
+## Transform the data to log-scale
+
+Use the function `log1p` to transform the data to log-scale
+
+```
+```
+
+## Visualize the distribution of the expression values
+
+Use violin plots and boxplots to visualize the distribution of the expression values. 
+Aggregate the replicates in the same experimental group into one average sample, and plot the averaged sample. Color by experimental factors.
+
+```
+```
+
+## Most variable genes
+
+Identify the 500 most variable genes (with largest variance across samples) and continue working with those
+
+```
+```
+
+## Sample correlations
+
+Compute and visualize the sample-to-sample correlations
+
+```
+```
+
+## Clustering
+
+Compute and visualize a hierarchical clustering of the samples, use the method `hclust`
+
+```
+
+```
+
+## Heatmap
+
+Use the package `pheatmap` to generate a heatmap of the expression data.
