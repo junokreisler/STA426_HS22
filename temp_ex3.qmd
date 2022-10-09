@@ -18,8 +18,8 @@ The experiment has two experimental factors "Treatment" and "Technology". Treatm
 ## Data Import
 
 ```{r }
-x = readRDS("counts.RDS")
-anno = readRDS("phenodata.RDS")
+x = readRDS("../counts.RDS")
+anno = readRDS("../phenodata.RDS")
 head(anno)
 ```
 
@@ -29,7 +29,6 @@ How many replicates are there for each combination of factor levels?
 
 ```{r}
 library('dplyr') # because i want it that way
-
 anno_replicates <- anno %>% group_by(Treatment, Technology) %>% summarise(rep_n = n())
 anno_replicates
 ```
@@ -40,9 +39,7 @@ How many genes have an expression value above 0 in each sample?
 total_samples <- length(colnames(x))
 no_genes_in_sample <- x
 no_genes_in_sample[x != 0] <- 1
-
 gene_sums <- c(1:total_samples)
-
 for (i in c(1:total_samples)) {
   gene_sums[i] <- sum(no_genes_in_sample[,i])
 }
@@ -65,13 +62,11 @@ total sum of counts per sample (serves as a proxy for the number of sequenced re
 
 ```{r}
 count_sums <- c(1:total_samples)
-
 for (i in c(1:total_samples)) {
   count_sums[i] <- sum(x[,i])
 }
 names(count_sums) <- colnames(x)
 head(count_sums)
-
 yticks <- seq(0,max(count_sums), by = 1000000)
 barplot(count_sums, names.arg = c(1:length(gene_sums)), main = 'Read counts per sample\nX axis = sample no. ', 
         ylim = c(0,max(count_sums)))
@@ -82,15 +77,12 @@ Color the samples by the experimental condition.
 
 ```{r}
 rownames(anno) == colnames(x) # just making sure before pasting...
-
 library(ggplot2) # the only way
 count_dataset <- data.frame('Sample.counts' = count_sums, 'Technology' = anno$Technology, 'Treatment' = anno$Treatment,
                             'Condition' = paste(anno$Treatment, anno$Technology))
-
 ggplot(count_dataset, aes(x = c(1:length(rownames(count_dataset))), y = Sample.counts, fill=Condition)) + 
     geom_bar(position="dodge", stat="identity")
-
-# I made sure that the bar locations on the base plots correspond to bar locations on the ggplot.
+# I made sure that the bar locations on the base plots correspond to bar locations on the ggplot. One TSA IFC96 ended up in the middle because of that.
 ```
 
 ## Normalize the data
@@ -101,20 +93,15 @@ Scale the columns so that the total sum of all columns are identical
 ```{r}
 # divide the columns by their sum
 scaled_reads <- x
-
 for (i in c(1:total_samples)) {
   scaled_reads[,i] <- x[,i] / count_sums[i]
 }
-
 scaled_dataset <- count_dataset
 scaled_sums <- c(1:total_samples)
-
 for (i in c(1:total_samples)) {
-  scaled_sums[i] <- sum(scaled_reads[,i]) # should be 1 everywhere
+  scaled_sums[i] <- sum(scaled_reads[,i]) # should be 1 everywhere normalized, scaled to 100k
 }
-
 scaled_dataset$Sample.counts <- scaled_sums
-
 ggplot(scaled_dataset, aes(x = c(1:total_samples), y = Sample.counts, fill=Condition)) + 
     geom_bar(position="dodge", stat="identity")
 ```
@@ -123,7 +110,8 @@ ggplot(scaled_dataset, aes(x = c(1:total_samples), y = Sample.counts, fill=Condi
 
 Use the function `log1p` to transform the data to log-scale
 
-```
+```{r}
+log_scaled_reads <- t(log1p(scaled_reads*1000000))
 ```
 
 ## Visualize the distribution of the expression values
@@ -131,31 +119,93 @@ Use the function `log1p` to transform the data to log-scale
 Use violin plots and boxplots to visualize the distribution of the expression values. 
 Aggregate the replicates in the same experimental group into one average sample, and plot the averaged sample. Color by experimental factors.
 
-```
+```{r}
+# combining reads and metadata
+scaled_dataset$Sample.name <- rownames(scaled_dataset)
+log_scaled_reads <- cbind(rownames(log_scaled_reads), log_scaled_reads)
+colnames(log_scaled_reads)[1] <- 'Sample.name'
+combined_log_dataset <- scaled_dataset[-c(1,4)] %>% inner_join(log_scaled_reads, by = 'Sample.name', copy = TRUE)
+
+rownames(combined_log_dataset) <- combined_log_dataset$Sample.name
+
+combined_log_dataset <- combined_log_dataset[-3]
+for (i in c(3:length(colnames(combined_log_dataset)))) {
+  combined_log_dataset[,i] <- as.numeric(combined_log_dataset[,i])
+  class(combined_log_dataset[,i])
+}
+
+# aggregating for sample means
+
+library(tidyr)
+
+aggregated_log_dataset <- aggregate(combined_log_dataset[-c(1:2)], 
+                                    by = list(combined_log_dataset$Treatment,
+                                              combined_log_dataset$Technology), 
+                                    FUN = mean)
+colnames(aggregated_log_dataset)[c(1,2)] <- c('Treatment', 'Technology')
+
+for_violin_long <- aggregated_log_dataset %>% pivot_longer(-c('Treatment', 'Technology'),
+                                                           names_to = 'Gene',
+                                                           values_to = 'Expression')
+
+ggplot(for_violin_long, aes(x = Treatment, 
+                            y = Expression, fill = Technology)) + 
+  geom_violin()
+
+ggplot(for_violin_long, aes(x = Technology, 
+                            y = Expression, fill = Treatment)) + 
+  geom_boxplot(width = 0.5)
 ```
 
 ## Most variable genes
 
 Identify the 500 most variable genes (with largest variance across samples) and continue working with those
 
-```
+```{r}
+variance_log_expr <- c(3:length(aggregated_log_dataset))
+
+for (i in c(3:length(aggregated_log_dataset))) {
+  variance_log_expr[i-2] <- var(aggregated_log_dataset[,i])
+}
+
+names(variance_log_expr) <- rownames(x)
+top_500_variance <- sort(variance_log_expr, decreasing = TRUE)[1:500]
+top_500_dataset <- combined_log_dataset[,names(top_500_variance)]
 ```
 
 ## Sample correlations
 
 Compute and visualize the sample-to-sample correlations
 
-```
+```{r}
+sample_corr_matrix <- matrix(ncol = 86, nrow = 86)
+for (i in c(1:dim(sample_corr_matrix)[1])) {
+  for (j in c(1:dim(sample_corr_matrix)[2])) {
+    sample_corr_matrix[i,j] <- cor(as.numeric(top_500_dataset[i,]),
+                                   as.numeric(top_500_dataset[j,]))
+  }
+}
+
+colnames(sample_corr_matrix) <- rownames(top_500_dataset)
+rownames(sample_corr_matrix) <- rownames(top_500_dataset)
+
+heatmap(sample_corr_matrix)
 ```
 
 ## Clustering
 
 Compute and visualize a hierarchical clustering of the samples, use the method `hclust`
 
-```
+```{r}
+plot(hclust(dist(sample_corr_matrix)))
 
 ```
 
 ## Heatmap
 
 Use the package `pheatmap` to generate a heatmap of the expression data.
+
+```{r}
+library(pheatmap)
+
+pheatmap(top_500_dataset)
