@@ -209,3 +209,4 @@ Use the package `pheatmap` to generate a heatmap of the expression data.
 library(pheatmap)
 
 pheatmap(top_500_dataset)
+```
