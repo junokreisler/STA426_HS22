@@ -115,8 +115,6 @@ Produce an additional visualization to show that you understand the differential
 
 ### Volcano plot for visualizing differential gene expression
 ```{r}
-library(ggallin)
-
 sample_data <- y
 
 # Calculate p values for differential expression:
@@ -134,9 +132,6 @@ pvalues_raw <- apply(sample_data, 1, t_test_multiple,
                    g1 = c(1:nSamples %/% 2), 
                    g2 = c((nSamples %/% 2 + 1):(nSamples)))
 
-# now log2FC
-#df = log2(df)
-
 means_g1 <- c(1:nGenes)
 means_g2 <- c(1:nGenes)
 
@@ -144,27 +139,21 @@ for (i in c(1:nGenes)) {
   means_g1[i] <- mean(sample_data[i,1:nSamples %/% 2])
   means_g2[i] <- mean(sample_data[i,(nSamples %/% 2 + 1):(nSamples)])
 }
-means_g1 = mean(sample_data[,1:nSamples %/% 2])
-means_g2 = mean(sample_data[,(nSamples %/% 2 + 1):(nSamples)])
-logfoldchange <- group2 / group1
+L2FC <- means_g2 - means_g1
 
-results = cbind(logfoldchange, rawpvalue)
-results = as.data.frame(results)
-results$probename <- rownames(results)
+diff_df <- data.frame(cbind(pvalues_raw, L2FC))
 
-label_diff <- rep("not differntial",nrow(y))
-label_diff[indD] <- "differntial"
-results$condition <- label_diff
+diff_df$gene_no <- rownames(diff_df)
 
-
-p <- ggplot(data=results, aes(x=logfoldchange, y=-log10(rawpvalue), col = condition)) +
+ggplot(data=diff_df, 
+       aes(x=L2FC, y=-log10(pvalues_raw),
+           label = gene_no)) +
   geom_point() +
-  theme_minimal() +
-  scale_x_continuous(trans = pseudolog10_trans) +   
-  theme(axis.text.x = element_text(angle = 90))
-plot(p)
- 
-
+  geom_hline(yintercept = 4, color = 'red') +
+  geom_vline(xintercept = -2, color = 'red') + 
+  geom_vline(xintercept = 2, color = 'red') +
+  geom_text(aes(label=ifelse(-log10(pvalues_raw)>4 & abs(L2FC) > 2,gene_no,'')),
+            hjust=0,vjust=0)
 ```
 
 ## Question 3
@@ -172,21 +161,12 @@ plot(p)
 Create a design matrix to represent the linear model fit (to each row of the table) by limma:
 
 ```{r}
-(design <- model.matrix(~grp))
+design <- model.matrix(~grp)
 ```
 
-**In terms of the model that is fit for each feature, what is the interpretation of the two columns of this design matrix?**
+### In terms of the model that is fit for each feature, what is the interpretation of the two columns of this design matrix?
 
-I am not entirely sure if I got the question correctly, let's hope. In general the design matrix has information on the independent variables. Here the first columns with full of ones is here for the estimation of the y-intercept. In our example it would together with the alpha1/beta1 be the expression without a differential shift (wild type expression). The second column defines the group so the underlying x values with the accordingly y. Here this would be the difference between the differential expressed group and the wild type. You could also write it liked this:
-
-1 0\
-1 0\
-1 0\
-0 1\
-0 1\
-0 1
-
-But then you would need in second step to compute the contrast matrix.(-1,1) [This explains it a lot better than me](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7873980/)
+Groups are 0 and 1, probably just to distinguish the two. Maybe 0 is the reference. The lm() function can use factors where one is usually kept as a reference... if I follow the lm() logic then the null hypothesis intercept is given for each sample. Maybe the function also sets the intercept values as constants so that only grp effect is quantified. Kinda like setting it up for ANOVA?
 
 ```{r}
 fit <- lmFit(y,design)
