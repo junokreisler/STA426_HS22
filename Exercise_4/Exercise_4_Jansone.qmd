@@ -232,80 +232,63 @@ Answer: T-statistics separates the 2 groups better based on the differences in t
 Pick a reasonable metric to compare the methods, such as an ROC curve, false discovery plot, power versus achieved FDR. Using this metric/curve, formally compare the performance of the classical t-test, the moderated t-test and the log-fold-change or mean difference (fit\$coef). Two packages that are useful for these kind of plots include: ROCR or iCOBRA. You can add options to executable code like this
 
 ```{r}
-df <- y 
-ttest_example <- function(df, grp1, grp2) {
-  x = df[grp1]
-  y = df[grp2]
-  x = as.numeric(x)
-  y = as.numeric(y)  
-  results = t.test(x, y, alternative = "two.sided" )
-  #results$p.value
-  results$statistic
-}
-pvalue_classic = apply(df, 1, ttest_example, grp1 = c(1:3), grp2 = c(4:6))
-t_value_classic = apply(df, 1, ttest_example, grp1 = c(1:3), grp2 = c(4:6))
+t_test_classic <- apply(y, 1, t_test_multiple_t, 
+                   g1 = c(1: (nSamples %/% 2)), 
+                   g2 = c((nSamples %/% 2 + 1 ): (nSamples)))
 
-pvalue_moderate = (fit$p.value)[,2]
+p_value_classic <- apply(y, 1, t_test_multiple, 
+                   g1 = c(1: (nSamples %/% 2)), 
+                   g2 = c((nSamples %/% 2 + 1 ): (nSamples)))
 
-group1 = apply(df[,1:3], 1, mean)
-group2 = apply(df[, 4:6], 1, mean) 
-foldchange <- group2 / group1
+p_value_moderated = (fit$p.value)[,2]
+
+# L2FC already here 
 
 label <- rep(0,nrow(y))
 label[indD] <- 1
 
 ```
 
+### ROC curve:
 ```{r}
-library(ROCR)
+library(ROCR) #prediction, performance
 
-range01 <- function(x){(x-min(x))/(max(x)-min(x))}
+range_function <- function(x){(x-min(x))/(max(x)-min(x))}
 
-abs_t_statistics_moderate = abs(t_statistics_moderate)
-norm_tvalue_mod = range01(abs_t_statistics_moderate)
+classic_norm = range_function(abs(t_test_classic))
 
-abs_foldchange = abs(foldchange)
-norm_foldchange = range01(abs_foldchange)
+t_moderated_norm = range_function(abs(fit$t[,2]))
 
-abs_classic = abs(t_value_classic)
-norm_classic = range01(abs_classic)
+L2FC_norm = range_function(L2FC)
 
 
-pred_classic = prediction(norm_classic, label)
-#pred_mod = prediction(pvalue_moderate, label)
-pred_mod = prediction(norm_tvalue_mod, label)
-pred_fc = prediction(norm_foldchange, label)
+classic_pred = prediction(classic_norm, label)
+L2FC_pred = prediction(L2FC_norm, label)
+moderated_pred = prediction(t_moderated_norm, label)
 
-perf_fc = performance(pred_fc, "tpr", "fpr")
-perf_classic <- performance(pred_classic, "tpr", "fpr")
-perf_mod <- performance(pred_mod, "tpr", "fpr")
+classic_perf <- performance(classic_pred, "tpr", "fpr")
+L2FC_perf = performance(L2FC_pred, "tpr", "fpr")
+moderated_perf <- performance(moderated_pred, "tpr", "fpr")
 
-auc_ROCR_classic <- performance(pred_classic, measure = "auc")
-auc_ROCR_classic <- auc_ROCR_classic@y.values[[1]]
+AUC_classic_ROC <- performance(classic_pred, measure = "auc")@y.values[[1]]
+AUC_L2FC_ROC <- performance(L2FC_pred, measure = "auc")@y.values[[1]]
+AUC_moderated_ROC <- performance(moderated_pred, measure = "auc")@y.values[[1]]
 
-auc_ROCR_mod <- performance(pred_mod, measure = "auc")
-auc_ROCR_mod <- auc_ROCR_mod@y.values[[1]]
+# Plotting the AUC-ROC curves
 
-auc_ROCR_fc <- performance(pred_fc, measure = "auc")
-auc_ROCR_fc <- auc_ROCR_fc@y.values[[1]]
+plot(classic_perf)
+plot(moderated_perf, col="red", add = TRUE)
+plot(L2FC_perf, col="blue", add = TRUE) 
 
+abline(a = 0, b = 1, lty = 2) # random classifier reference
 
-
-plot(perf_classic, col="blue")
-plot(perf_mod, add = TRUE, col="green")
-plot(perf_fc, add = TRUE, col="red") # problem as log fold change can be post or negative
-abline(a = 0, b = 1)
-
-# print(paste("ROC AUC (area under curve) of logfoldchange:", auc_ROCR_fc))
-# print(paste("ROC AUC (area under curve) of classic ttest:", auc_ROCR_classic))
-# print(paste("ROC AUC (area under curve) of moderate ttest:", auc_ROCR_mod))
-
+legend('bottomright',legend = c('Classic', 'Moderated', 'Log2 fold change', 'Random'), col = c('black','red','blue', 'black'), lty = c(1,1,1,2))
 ```
-**ROC AUC (area under curve) of logfoldchange:** `r auc_ROCR_fc` <br />
-**ROC AUC (area under curve) of classic ttest:** `r auc_ROCR_classic` <br />
-**ROC AUC (area under curve) of moderate ttest:** `r auc_ROCR_mod` <br />
+ROC of classic t-test: `r AUC_classic_ROC`
 
+ROC of Log2 fold change: `r AUC_L2FC_ROC`
 
+ROC of moderated t-test: `r AUC_moderated_ROC`
 
 Next, we will run a standard 'limma' differential expression (DE) analysis on a real microarray dataset. In particular, we will explore the combination of design matrices and contrast matrices to answer DE questions-of-interest. If you need additional resources to understand this exercise or the methods behind it, it is strongly encourage to read both the limma paper and the limma user's guide; the main details are also given in the lecture.
 
