@@ -415,14 +415,15 @@ target_row <- '40117_at' # just browsed
 select_row <- exprs_data[c(target_row),]
 mean_row <- mean(select_row) # ANS 2
 
-L2FC_manual_a <- mean(select_row[3:4])/mean(select_row[1:2]) # assuming that the values are already log? otherwise, log2(...)
+L2FC_manual_a <- mean(mean(select_row[3:4])/mean(select_row[1:2]), 
+                                                 mean(select_row[7:8])/mean(select_row[5:6])) # assuming that the values are already log? otherwise, log2(...)
 L2FC_manual_b <- log2(L2FC_manual_a)
 ```
-Manually calculated AveExpr: `r mean_row` (compare with LIMMA `fit2_matrix[target_row,]$AveExpr` - identical
+Manually calculated AveExpr: `r mean_row` (compare with LIMMA `r `fit2_matrix[target_row,]$AveExpr` - identical
 
-Manually calculated L2FC: `r L2FC_manual_a` or (with log) `L2FC_manual_b` (compare with LIMMA `fit2_matrix[target_row,]$logFC`)
+Manually calculated L2FC: `r L2FC_manual_a` or (with log) `r `L2FC_manual_b` (compare with LIMMA `r `r fit2_matrix[target_row,]$logFC`)
 
-No idea why, maybe should be calculated from raw data? Are there adjustments made?
+## No idea why, maybe should be calculated from raw data? Are there adjustments made?
 
 Important side note: if your experiment is sufficiently simple (e.g., a 1-way design), you may not need a contrast matrix at all; the differential expression of interest can be defined through column(s) of the design matrix (see discussion in the lecture notes).
 
