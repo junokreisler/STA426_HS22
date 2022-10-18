@@ -14,7 +14,7 @@ editor_options:
 ```{r}
 library("limma")
 library("ggplot2")
-install.packages(c('matrixstats','tidyr','ggallin'))
+#install.packages(c('matrixStats','tidyr'))
 ```
 
 ## Initial input values
@@ -86,7 +86,7 @@ colnames(pooled_true_var_df) <- c('Observed', 'True')
 
 ```
 
-### Plotting ooled and true variance:
+### Plotting pooled and true variance:
 
 ```{r}
 pooled_var_hist = hist(pooled_var) # needs log10, log1p not enough
@@ -120,16 +120,15 @@ sample_data <- y
 # Calculate p values for differential expression:
 
 t_test_multiple <- function(df, g1, g2) {
-  x = df[g1]
-  y = df[g2]
-  x = as.numeric(x)
-  y = as.numeric(y)  
-  results = t.test(x, y)
-  results$p.value
+  x = as.numeric(df[g1])
+  y = as.numeric(df[g2])
+ 
+  result = t.test(x, y, alternative = "two.sided")
+  result$p.value
 }
 
 pvalues_raw <- apply(sample_data, 1, t_test_multiple, 
-                   g1 = c(1:nSamples %/% 2), 
+                   g1 = c(1:(nSamples %/% 2)), 
                    g2 = c((nSamples %/% 2 + 1):(nSamples)))
 
 means_g1 <- c(1:nGenes)
@@ -183,8 +182,7 @@ Below, a vector of colours is used to signify the true differential "status", wh
 cols <- rep("non-differential",nrow(y))
 cols[indD] <- "differential"
 
-qplot(y=fit$t[,2]) + geom_point(aes(colour=cols)) 
-
+qplot(y=fit$t[,2]) + geom_point(aes(colour=cols))
 ```
 
 ## Question 4
@@ -290,11 +288,19 @@ ROC of Log2 fold change: `r AUC_L2FC_ROC`
 
 ROC of moderated t-test: `r AUC_moderated_ROC`
 
+
 Next, we will run a standard 'limma' differential expression (DE) analysis on a real microarray dataset. In particular, we will explore the combination of design matrices and contrast matrices to answer DE questions-of-interest. If you need additional resources to understand this exercise or the methods behind it, it is strongly encourage to read both the limma paper and the limma user's guide; the main details are also given in the lecture.
 
 ```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("affy")
+BiocManager::install('preprocessCore')
+
 library("affy")
 library("preprocessCore")
+
 unzip("affy_estrogen.zip")
 ddir <- "affy_estrogen"
 dir(ddir)
@@ -310,6 +316,8 @@ targets$time.h <- factor(targets$time.h)
 targets
 
 ```
+
+
 
 ```{r}
 abatch <- ReadAffy(filenames=targets$filename,
@@ -351,8 +359,8 @@ https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7873980/
 
 ```{r}
 cont.matrix <- makeContrasts(E10="present10-absent10",
-                             E48="present48-absent48",
-                             Time="absent48-absent10",levels=design)
+              E48="present48-absent48",
+              Time="absent48-absent10",levels=design)
 cont.matrix
 ```
 
@@ -394,48 +402,30 @@ qplot(x=f, y=exprs(eset)["39642_at",],) +
 
 ## Question 6
 
-From the matrix of summarized Affymetrix data that went into the limma pipeline in the first place (exprs(eset)), manually calculate the logFC and AveExpr for one of the top differentially expressed features
-
-I am a little bit confused. Limma uses a linear model to calculate the log expression values which takes several parameter into account such as inter gene correlation precision weight etc. So if I calculate it manually I will never get the same result unless I also calculat the linear model manually.
+From the matrix of summarized Affymetrix data that went into the limma pipeline in the first place (exprs(eset)), manually calculate the logFC and AveExpr for one of the top differentially expressed features.
 
 ```{r}
-dataset = exprs(eset)
+exprs_data = exprs(eset)
 
-fit_matrix = topTable(fit2, coef=1, number=dim(dataset)[1])
-max_row = fit_matrix[which.max(fit_matrix$logFC),]
-int_row = rownames(max_row)
+# sorting by l2fc
 
-dataset_row = dataset[c(int_row),]
-mean_man = mean(dataset_row)
+fit2_matrix <- topTable(fit2, coef=1, number=dim(exprs_data)[1])
+target_row <- '40117_at' # just browsed
 
-# I only have choosen 1,2 against 3,4 as coef 1 is only present10-absent10.
-log_man = log2(mean(dataset_row[1:2])/mean(dataset_row[5:6]))
-#log_man = mean(dataset_row[1:2])/mean(dataset_row[5:6])
+select_row <- exprs_data[c(target_row),]
+mean_row <- mean(select_row) # ANS 2
 
-# print(paste("Average expression level calculated with LIMMA pipeline:",max_row$AveExpr))
-# print(paste("Average expression level calculated manually:", mean_man))
-# print(paste("LogFC calculated by LIMMA pipeline:", max_row$logFC))
-# print(paste("LogFC calculated manually:", as.character(log_man)))
+L2FC_manual_a <- mean(select_row[3:4])/mean(select_row[1:2]) # assuming that the values are already log? otherwise, log2(...)
+L2FC_manual_b <- log2(L2FC_manual_a)
 ```
-Average expression level calculated with LIMMA pipeline: `r  max_row$AveExpr` <br />
-Average expression level calculated manually: `r mean_man` <br />
-LogFC calculated by LIMMA pipeline: `r max_row$logFC` <br />
-LogFC calculated manually: `r log_man` <br />
+Manually calculated AveExpr: `r mean_row` (compare with LIMMA `fit2_matrix[target_row,]$AveExpr` - identical
 
-I am not sure if I did something wrong, the difference looks quit big to me!
+Manually calculated L2FC: `r L2FC_manual_a` or (with log) `L2FC_manual_b` (compare with LIMMA `fit2_matrix[target_row,]$logFC`)
+
+No idea why, maybe should be calculated from raw data? Are there adjustments made?
 
 Important side note: if your experiment is sufficiently simple (e.g., a 1-way design), you may not need a contrast matrix at all; the differential expression of interest can be defined through column(s) of the design matrix (see discussion in the lecture notes).
 
 ## Informations
 
 Note: Submit both the quarto file as well as a compiled HTML file to your private github repository. Note: A convenient way to put all of the contents of a quarto document in a single HTML file is to use the self-contained: true option, as in the header below. Of course, you would need to put this in the header part at the top of your QMD file.
-
----
-title: "Exercise Week 4"
-format:
-  html:
-    self-contained: true
-editor: source
-editor_options: 
-  chunk_output_type: console
----
